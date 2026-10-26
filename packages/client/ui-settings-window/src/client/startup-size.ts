@@ -1,20 +1,20 @@
-/** Startup size presets and the comparison the row uses to find the current one. */
+/** Startup size presets and the comparisons the row uses to find the one that applies. */
 import type { DesktopStartupWindowSize } from '../protocol.ts'
 
 /** One selectable startup size; `id` is the menu key and the stored preference is `size`. */
 export interface StartupSizePreset {
-  readonly id: 'default' | '720p' | 'xga' | 'wxga' | 'hdplus' | 'fhd' | 'maximize'
+  readonly id: 'default' | 'xga' | 'wxga' | 'hdplus' | 'fhd' | 'qhd' | 'maximize'
   readonly size: DesktopStartupWindowSize
 }
 
-/** Presets offered in General settings, smallest first and maximized last. */
+/** Presets offered in General settings, narrowest first and maximized last. */
 export const STARTUP_SIZE_PRESETS: readonly StartupSizePreset[] = [
   { id: 'default', size: 'default' },
-  { id: '720p', size: { width: 1280, height: 720 } },
   { id: 'xga', size: { width: 1366, height: 768 } },
   { id: 'wxga', size: { width: 1440, height: 900 } },
   { id: 'hdplus', size: { width: 1600, height: 900 } },
   { id: 'fhd', size: { width: 1920, height: 1080 } },
+  { id: 'qhd', size: { width: 2560, height: 1440 } },
   { id: 'maximize', size: 'maximize' },
 ]
 

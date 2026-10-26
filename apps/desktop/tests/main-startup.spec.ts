@@ -104,7 +104,7 @@ const harness = await vi.hoisted(async () => {
     readonly setTitleBarOverlay = vi.fn()
     readonly setVibrancy = vi.fn()
     readonly setBackgroundColor = vi.fn()
-    constructor(readonly options: { show: boolean; modal?: boolean }) {
+    constructor(readonly options: { show: boolean; modal?: boolean; width?: number; height?: number }) {
       super(); if (windowFailure !== undefined) throw windowFailure; windows.push(this)
     }
     isDestroyed() { return this.destroyed }
@@ -1253,6 +1253,35 @@ describe('desktop main startup', () => {
     expect(window.maximize).toHaveBeenCalledOnce()
     expect(window.isMaximized()).toBe(true)
     expect(window.maximize.mock.invocationCallOrder[0]).toBeLessThan(window.show.mock.invocationCallOrder[0]!)
+  })
+
+  it('round-trips the startup window size through the product API', async () => {
+    await readyForUpdate()
+    expect(invoke(DESKTOP_IPC.windowStartupSizeGet, 'app')).toBe('default')
+    await expect(invoke(DESKTOP_IPC.windowStartupSizeSet, 'app', { width: 1600, height: 900 }) as Promise<unknown>)
+      .resolves.toEqual({ width: 1600, height: 900 })
+    expect(invoke(DESKTOP_IPC.windowStartupSizeGet, 'app')).toEqual({ width: 1600, height: 900 })
+    const document = JSON.parse(readFileSync(join(harness.app.getPath('userData'), 'desktop', 'settings.json'), 'utf8')) as {
+      window: { startupSize: unknown }
+    }
+    expect(document.window.startupSize).toEqual({ width: 1600, height: 900 })
+  })
+
+  it('rejects a startup window size the shell cannot apply', async () => {
+    await readyForUpdate()
+    const reject = invoke(DESKTOP_IPC.windowStartupSizeSet, 'app', { width: 0, height: 900 }) as Promise<unknown>
+    await expect(reject).rejects.toThrow('rejected an invalid startup window size')
+    expect(invoke(DESKTOP_IPC.windowStartupSizeGet, 'app')).toBe('default')
+  })
+
+  it('applies a stored startup size to the window it creates', async () => {
+    const directory = join(harness.app.getPath('userData'), 'desktop')
+    mkdirSync(directory, { recursive: true })
+    writeFileSync(join(directory, 'settings.json'), '{"window":{"startupSize":{"width":1600,"height":900}}}')
+    await readyForUpdate()
+    const window = harness.windows[0]!
+    expect(window.maximize).not.toHaveBeenCalled()
+    expect(window.options).toMatchObject({ width: 1600, height: 900 })
   })
 
   it.each([

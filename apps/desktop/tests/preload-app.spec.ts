@@ -185,6 +185,19 @@ it('exposes constrained shortcut operations and releases configuration subscript
   off(); expect(electron.ipcRenderer.off).toHaveBeenCalledWith(DESKTOP_IPC.shortcutsChanged, handler)
 })
 
+it('exposes the startup window size the shell applies at launch', async () => {
+  vi.stubGlobal('location', new URL('dsh-app://app/'))
+  electron.ipcRenderer.invoke.mockResolvedValueOnce('default').mockResolvedValueOnce({ width: 1440, height: 900 })
+  await import('../src/preload-app.ts')
+  const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshDesktop')?.[1] as DshDesktopProductApi
+  await expect(api.window.startupSize()).resolves.toBe('default')
+  await expect(api.window.setStartupSize({ width: 1440, height: 900 })).resolves.toEqual({ width: 1440, height: 900 })
+  expect(electron.ipcRenderer.invoke.mock.calls).toEqual([
+    [DESKTOP_IPC.windowStartupSizeGet],
+    [DESKTOP_IPC.windowStartupSizeSet, { width: 1440, height: 900 }],
+  ])
+})
+
 it('withholds the product API from same-origin child frames', async () => {
   vi.stubGlobal('location', new URL('dsh-app://app/'))
   vi.stubGlobal('process', { ...process, isMainFrame: false })

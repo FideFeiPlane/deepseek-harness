@@ -21,18 +21,29 @@ export type StartupWindowSizeRowProps =
 
 const PRESET_LABEL: Record<StartupSizePreset['id'], WindowSizeLocaleKey> = {
   default: 'sizeDefault',
-  '720p': 'size720p',
   xga: 'sizeXga',
   wxga: 'sizeWxga',
   hdplus: 'sizeHdplus',
   fhd: 'sizeFhd',
+  qhd: 'sizeQhd',
   maximize: 'sizeMaximize',
+}
+
+/**
+ * Percentage the system scales this display by.
+ * @returns the percentage when it is not 100, otherwise undefined.
+ */
+function displayScale(): number | undefined {
+  const ratio = globalThis.devicePixelRatio
+  if (!(ratio > 0) || !Number.isFinite(ratio)) return undefined
+  const percent = Math.round(ratio * 100)
+  return percent === 100 ? undefined : percent
 }
 
 /**
  * Render the startup window size selector.
  * @param props - the preload bridge and localized copy.
- * @returns the preference row, or nothing while the stored value loads.
+ * @returns the preference row, or nothing before the stored value loads.
  */
 export function StartupWindowSizeRow({ window: bridge, t }: StartupWindowSizeRowProps) {
   const [value, setValue] = useState<DesktopStartupWindowSize>()
@@ -50,6 +61,7 @@ export function StartupWindowSizeRow({ window: bridge, t }: StartupWindowSizeRow
   }, [bridge])
 
   const current = value === undefined ? undefined : matchingStartupPreset(value)
+  const scale = displayScale()
   const label = ((): string => {
     if (value === undefined) return t('loading')
     if (current !== undefined) return t(PRESET_LABEL[current.id])
@@ -75,6 +87,7 @@ export function StartupWindowSizeRow({ window: bridge, t }: StartupWindowSizeRow
         {failed
           ? <div className={`${css.desc} ${css.failure}`} role="status">{t('writeFailed')}</div>
           : <div className={css.desc}>{t('description')}</div>}
+        {scale !== undefined && <div className={css.desc}>{t('displayScale', { scale })}</div>}
       </div>
       <Menu
         open={open}
