@@ -35,7 +35,8 @@ export function apply(ctx: Context): void {
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item',
     id: 'startup-window-size',
-    order: 90,
+    // Between the appearance row (10) and the font-size row (11).
+    order: 10.5,
     locale: NS,
     inject: face,
   }, StartupWindowSizeRow))

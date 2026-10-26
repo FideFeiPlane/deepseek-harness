@@ -41,11 +41,25 @@ it('adds one General row under the Desktop shell and removes it on disposal', as
   try {
     const entries = slots.entries('settings.general.item')
     expect(entries).toHaveLength(1)
-    expect(entries[0]!.options).toMatchObject({ id: 'startup-window-size', order: 90 })
+    expect(entries[0]!.options).toMatchObject({ id: 'startup-window-size', order: 10.5 })
     expect(entries[0]!.inject?.()).toEqual({ window: api })
     await fiber.dispose()
     expect(slots.entries('settings.general.item')).toHaveLength(0)
   } finally {
+    await ctx.fiber.dispose()
+  }
+})
+
+it('orders the row between the appearance and font-size rows', async () => {
+  const { ctx, slots, fiber } = await mount(true)
+  try {
+    // client-ui-theme owns 'appearance' at order 10 and 'font-size' at order 11.
+    slots.register({ name: 'settings.general.item', id: 'appearance', order: 10 }, () => null)
+    slots.register({ name: 'settings.general.item', id: 'font-size', order: 11 }, () => null)
+    expect(slots.entries('settings.general.item').map(entry => entry.options.id))
+      .toEqual(['appearance', 'startup-window-size', 'font-size'])
+  } finally {
+    await fiber.dispose()
     await ctx.fiber.dispose()
   }
 })
