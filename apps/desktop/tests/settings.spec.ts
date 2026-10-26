@@ -1,9 +1,9 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import * as fs from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, onTestFinished, vi } from 'vitest'
-import { readDesktopSettings } from '../src/settings.ts'
+import { readDesktopSettings, writeDesktopStartupSize } from '../src/settings.ts'
 
 vi.mock('node:fs', async importOriginal => ({ ...await importOriginal<typeof import('node:fs')>() }))
 
@@ -22,8 +22,12 @@ it('creates a discoverable default file on first launch without touching other p
   const { userData, path } = fixture()
   rmSync(join(userData, 'desktop'), { recursive: true })
   writeFileSync(join(userData, 'keybindings.json'), 'existing shortcuts\n')
-  expect(readDesktopSettings(userData)).toEqual({ updates: { allowTestAuthPopupWindow: false } })
-  expect(readFileSync(path, 'utf8')).toBe('{\n  "updates": {\n    "allowTestAuthPopupWindow": false\n  }\n}\n')
+  expect(readDesktopSettings(userData)).toEqual({
+    updates: { allowTestAuthPopupWindow: false },
+    window: { startupSize: 'default' },
+  })
+  expect(readFileSync(path, 'utf8'))
+    .toBe('{\n  "updates": {\n    "allowTestAuthPopupWindow": false\n  },\n  "window": {\n    "startupSize": "default"\n  }\n}\n')
   expect(readFileSync(join(userData, 'keybindings.json'), 'utf8')).toBe('existing shortcuts\n')
 })
 
@@ -31,6 +35,7 @@ it.each(['{}', '{"updates": {}}', '{"other": 1, "updates": {"other": true}}'])('
   const { userData, path } = fixture()
   writeFileSync(path, raw)
   expect(readDesktopSettings(userData).updates.allowTestAuthPopupWindow).toBe(false)
+  expect(readDesktopSettings(userData).window.startupSize).toBe('default')
   expect(readFileSync(path, 'utf8')).toBe(raw)
 })
 
@@ -48,12 +53,26 @@ it('loads explicit opt-in and opt-out on the next read without changing an earli
   expect(readDesktopSettings(userData).updates.allowTestAuthPopupWindow).toBe(true)
 })
 
+it.each([
+  ['"default"', 'default'],
+  ['"maximize"', 'maximize'],
+  ['{"width":1920,"height":1080}', { width: 1920, height: 1080 }],
+] as const)('loads the stored startup size %s', (raw, expected) => {
+  const { userData, path } = fixture()
+  writeFileSync(path, `{"window":{"startupSize":${raw}}}`)
+  expect(readDesktopSettings(userData).window.startupSize).toEqual(expected)
+})
+
 it.each(['', '{', 'null', '[]', '{"updates":null}', '{"updates":[]}',
   '{"updates":{"allowTestAuthPopupWindow":"false"}}', '{"updates":{"allowTestAuthPopupWindow":1}}',
-  '{"updates":{"allowTestAuthPopupWindow":null}}'])('reports invalid settings with their path and preserves the original: %s', (raw) => {
+  '{"updates":{"allowTestAuthPopupWindow":null}}', '{"window":null}', '{"window":[]}',
+  '{"window":{"startupSize":"fullscreen"}}', '{"window":{"startupSize":{"width":0,"height":720}}}',
+  '{"window":{"startupSize":{"width":1280}}}'])('reports invalid settings with their path and preserves the original: %s', (raw) => {
   const { userData, path } = fixture()
   writeFileSync(path, raw)
-  expect(readDesktopSettings(userData).updates.allowTestAuthPopupWindow).toBe(false)
+  const settings = readDesktopSettings(userData)
+  expect(settings.updates.allowTestAuthPopupWindow).toBe(false)
+  expect(settings.window.startupSize).toBe('default')
   expect(console.warn).toHaveBeenCalledWith(expect.stringContaining(path), expect.any(Error))
   expect(readFileSync(path, 'utf8')).toBe(raw)
 })
@@ -80,4 +99,35 @@ it('continues with defaults even when warning output fails', () => {
   vi.mocked(console.warn).mockImplementation(() => { throw new Error('output unavailable') })
   expect(readDesktopSettings(userData).updates.allowTestAuthPopupWindow).toBe(false)
   expect(readFileSync(path, 'utf8')).toBe('{')
+})
+
+it('creates the document when the size is the first stored preference', async () => {
+  const { userData, path } = fixture()
+  rmSync(join(userData, 'desktop'), { recursive: true })
+  await writeDesktopStartupSize(userData, 'maximize')
+  expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual({ window: { startupSize: 'maximize' } })
+  expect(readDesktopSettings(userData).window.startupSize).toBe('maximize')
+  if (process.platform !== 'win32') expect(statSync(path).mode & 0o777).toBe(0o600)
+})
+
+it('keeps unknown fields and unrelated preferences while replacing the size', async () => {
+  const { userData, path } = fixture()
+  writeFileSync(path, JSON.stringify({
+    updates: { allowTestAuthPopupWindow: true },
+    custom: { nested: true },
+    window: { startupSize: 'default', extra: 'keep' },
+  }))
+  await writeDesktopStartupSize(userData, { width: 1600, height: 900 })
+  expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual({
+    updates: { allowTestAuthPopupWindow: true },
+    custom: { nested: true },
+    window: { startupSize: { width: 1600, height: 900 }, extra: 'keep' },
+  })
+})
+
+it('refuses to replace a document it cannot parse', async () => {
+  const { userData, path } = fixture()
+  writeFileSync(path, '{"window": {')
+  await expect(writeDesktopStartupSize(userData, 'maximize')).rejects.toThrow()
+  expect(readFileSync(path, 'utf8')).toBe('{"window": {')
 })

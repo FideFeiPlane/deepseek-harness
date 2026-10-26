@@ -1,6 +1,7 @@
 /** Origin-scoped boot, native directory selection, host paths of picked files, and update presentation with native confirmation actions. */
 
 import type { DesktopShortcutInput, ShortcutConfigSnapshot, ShortcutSaveResult } from '@deepseek-ai/dsh-client-shortcuts/protocol'
+import type { DesktopStartupWindowSize } from '@deepseek-ai/dsh-client-ui-settings-window/protocol'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { DESKTOP_IPC, SCHEME, type DshDesktopProductApi, type DesktopUpdatePresentation } from './ipc.ts'
 import { PLATFORM_IPC } from './platform-ipc.ts'
@@ -57,6 +58,11 @@ function createProductApi(): DshDesktopProductApi {
         ipcRenderer.on(DESKTOP_IPC.shortcutsChanged, handle)
         return () => { ipcRenderer.off(DESKTOP_IPC.shortcutsChanged, handle) }
       },
+    },
+    window: {
+      startupSize: () => ipcRenderer.invoke(DESKTOP_IPC.windowStartupSizeGet) as Promise<DesktopStartupWindowSize>,
+      setStartupSize: size =>
+        ipcRenderer.invoke(DESKTOP_IPC.windowStartupSizeSet, size) as Promise<DesktopStartupWindowSize>,
     },
     updates: {
       status: () => ipcRenderer.invoke(DESKTOP_IPC.updatesStatus) as Promise<DesktopUpdatePresentation>,

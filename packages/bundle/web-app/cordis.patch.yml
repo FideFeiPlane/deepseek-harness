@@ -301,6 +301,11 @@
     - id: ui-settings-general
       name: '@deepseek-ai/dsh-client-ui-settings-general'
 
+    # Startup window size row in General settings; registers only under the
+    # Desktop shell, whose preload exposes the window preference.
+    - id: ui-settings-window
+      name: '@deepseek-ai/dsh-client-ui-settings-window'
+
     - id: ui-settings-models
       name: '@deepseek-ai/dsh-client-ui-settings-models'
 

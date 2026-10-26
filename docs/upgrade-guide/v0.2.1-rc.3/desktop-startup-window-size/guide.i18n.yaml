@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.3/desktop-startup-window-size/guide.md
+/:
+  en: e00615fb67cad7ca
+  zh: 0ffc543410a36075
+/choose-the-desktop-startup-window-size:
+  en: 04c60cee89991f60
+  zh: fbb30b6591799e02
+/choose-the-desktop-startup-window-size/change:
+  en: f212c137a36574eb
+  zh: ac7dc915c2c35458
+/choose-the-desktop-startup-window-size/migration:
+  en: d5a543400c0160b7
+  zh: b301dfbd71f2a848

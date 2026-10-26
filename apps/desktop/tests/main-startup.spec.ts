@@ -113,6 +113,9 @@ const harness = await vi.hoisted(async () => {
     readonly setFullScreen = vi.fn((flag: boolean) => { this.fullscreen = flag; this.emit(flag ? 'enter-full-screen' : 'leave-full-screen') })
     minimized = false
     isMinimized() { return this.minimized }
+    maximized = false
+    isMaximized() { return this.maximized }
+    readonly maximize = vi.fn(() => { this.maximized = true })
     visible = true
     isVisible() { return this.visible }
     isFocused() { return true }
@@ -314,6 +317,7 @@ vi.mock('electron', () => ({
     setPermissionCheckHandler: vi.fn(), setPermissionRequestHandler: vi.fn(), webRequest: { onBeforeSendHeaders: harness.socketHeaders },
   } },
   protocol: { registerSchemesAsPrivileged: vi.fn(), handle: harness.protocolHandle },
+  screen: { getPrimaryDisplay: () => ({ workAreaSize: { width: 1920, height: 1080 } }) },
   powerMonitor: harness.powerMonitor,
   Tray: harness.FakeTray,
   nativeImage: { createFromPath: (path: string) => ({ path }) },
@@ -1237,6 +1241,18 @@ describe('desktop main startup', () => {
     expect(replacement.show).toHaveBeenCalledOnce()
     expect(replacement.moveTop).not.toHaveBeenCalled()
     expect(replacement.setAlwaysOnTop).not.toHaveBeenCalled()
+  })
+
+  it('opens the workspace maximized when the shell settings ask for it', async () => {
+    const directory = join(harness.app.getPath('userData'), 'desktop')
+    mkdirSync(directory, { recursive: true })
+    writeFileSync(join(directory, 'settings.json'), '{"window":{"startupSize":"maximize"}}')
+    await readyForUpdate()
+    const window = harness.windows[0]!
+    await window.shown.promise
+    expect(window.maximize).toHaveBeenCalledOnce()
+    expect(window.isMaximized()).toBe(true)
+    expect(window.maximize.mock.invocationCallOrder[0]).toBeLessThan(window.show.mock.invocationCallOrder[0]!)
   })
 
   it.each([

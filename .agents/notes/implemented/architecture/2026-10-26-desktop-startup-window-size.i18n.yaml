@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-10-26-desktop-startup-window-size.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-26-desktop-startup-window-size.md
+/agent-note-desktop-startup-window-size-as-shell-configuration:
+  en: 7aa0b21e476d81f4
+  zh: 4a69d3ca3e0ebf93
+/agent-note-desktop-startup-window-size-as-shell-configuration/problem:
+  en: 5034a1a81fb15993
+  zh: eba813ed212c67fb
+/agent-note-desktop-startup-window-size-as-shell-configuration/decision:
+  en: 3d6e91aa5b872b31
+  zh: 8ef76af091e67697
+/agent-note-desktop-startup-window-size-as-shell-configuration/alternatives-considered:
+  en: 53f973e2c11e6cad
+  zh: ee4c5be863af9be2
+/agent-note-desktop-startup-window-size-as-shell-configuration/consequences:
+  en: 3c6802f6f1f1b91a
+  zh: 969ab8c0e14cde81

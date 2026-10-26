@@ -1,4 +1,5 @@
 import type { ProductEventMap, ProductEvent } from '@deepseek-ai/dsh-client-product-analytics/types'
+import type { DesktopStartupWindowSize } from '@deepseek-ai/dsh-client-ui-settings-window/protocol'
 import { WINDOWS_TITLEBAR_HEIGHT } from './windows-layout.ts'
 /** Electron shell: desktop project ownership, custom protocol, windows, and lifecycle. */
 
@@ -17,6 +18,7 @@ import {
   nativeTheme,
   net,
   protocol,
+  screen,
   session,
   shell,
   type IpcMainInvokeEvent,
@@ -54,7 +56,10 @@ import { DesktopMandatoryUpdatePolicy, resolveDesktopPolicyConfig, type DesktopP
 import { desktopClientMetadata, desktopClientVersion } from './client-metadata.ts'
 import { DesktopMandatoryUpdateWindow } from './mandatory-update-window.ts'
 import { DesktopPolicyTestAuth } from './policy-test-auth.ts'
-import { readDesktopSettings } from './settings.ts'
+import { readDesktopSettings, writeDesktopStartupSize } from './settings.ts'
+import {
+  DEFAULT_STARTUP_WINDOW, parseDesktopStartupWindowSize, resolveStartupWindowGeometry, type StartupWindowGeometry,
+} from './window-size.ts'
 import { DesktopUpdateDialog, type UpdateDialogOptions } from './update-dialog.ts'
 import { readDesktopRuntime } from './runtime-tree.ts'
 import { DesktopBrowserGuests } from './browser-guests.ts'
@@ -207,10 +212,15 @@ function platformLoginUrl(authorizeUrl: string): string {
   return url.href
 }
 
-function createWindow(preload: string, show = false, primary = false): BrowserWindow {
+function createWindow(
+  preload: string,
+  show = false,
+  primary = false,
+  geometry: StartupWindowGeometry = { ...DEFAULT_STARTUP_WINDOW, maximize: false },
+): BrowserWindow {
   const window = new BrowserWindow({
-    width: 1280,
-    height: 820,
+    width: geometry.width,
+    height: geometry.height,
     minWidth: 520,
     minHeight: 600,
     show,
@@ -240,6 +250,9 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
       devTools: true,
     },
   })
+  // Maximize before any content loads so the first paint is already the
+  // requested size; the window is still hidden until the workspace enters.
+  if (geometry.maximize) window.maximize()
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (['http:', 'https:'].includes(new URL(url).protocol)) void shell.openExternal(url)
     return { action: 'deny' }
@@ -318,6 +331,7 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
 
 async function main(): Promise<void> {
   const desktopSettings = readDesktopSettings(app.getPath('userData'))
+  let startupWindowSize: DesktopStartupWindowSize = desktopSettings.window.startupSize
   void pruneCrashReports(app.getPath('logs'))
   const journalDirectory = process.env.DSH_DESKTOP_UPDATE_JOURNAL_DIR
   const updateJournal = journalDirectory === undefined ? undefined : new DesktopUpdateJournal(journalDirectory, app.getVersion())
@@ -807,6 +821,18 @@ async function main(): Promise<void> {
     assertProductSender(event)
     return readDeviceInfo()
   })
+  ipcMain.handle(DESKTOP_IPC.windowStartupSizeGet, (event) => {
+    assertProductSender(event)
+    return startupWindowSize
+  })
+  ipcMain.handle(DESKTOP_IPC.windowStartupSizeSet, async (event, value: unknown) => {
+    assertProductSender(event)
+    const accepted = parseDesktopStartupWindowSize(value)
+    if (accepted === undefined) throw new Error('dsh desktop: rejected an invalid startup window size')
+    await writeDesktopStartupSize(app.getPath('userData'), accepted)
+    startupWindowSize = accepted
+    return startupWindowSize
+  })
   ipcMain.handle(DESKTOP_IPC.onboardingApiKey, async (event) => {
     assertProductSender(event)
     return (await readWelcomeState()).hasApiKey
@@ -1100,7 +1126,8 @@ async function main(): Promise<void> {
     }
   }
   const createMainWindow = (): BrowserWindow => {
-    const window = createWindow(appPreload, false, true)
+    const window = createWindow(appPreload, false, true,
+      resolveStartupWindowGeometry(startupWindowSize, screen.getPrimaryDisplay().workAreaSize))
     mainWindow = window
     browserGuests.bind(window, (guest, name) => shortcuts.attachGuest(window, guest, name))
     shortcuts.attach(window)
@@ -1152,6 +1179,9 @@ async function main(): Promise<void> {
     const window = mainWindow ?? createMainWindow()
     await navigateMain(applicationUrl)
     if (isQuitting() || recovery.active || window.isDestroyed()) return
+    // The size is a launch preference, but a window recreated later in this
+    // process (renderer recovery, closed-then-reopened) must honor it too.
+    if (startupWindowSize === 'maximize' && !window.isMaximized()) window.maximize()
     if (activate) window.show()
     else window.showInactive()
     enteredWorkspace = true
