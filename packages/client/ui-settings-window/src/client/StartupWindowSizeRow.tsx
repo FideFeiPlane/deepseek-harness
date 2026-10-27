@@ -47,7 +47,7 @@ function displayScale(): number | undefined {
  */
 export function StartupWindowSizeRow({ window: bridge, t }: StartupWindowSizeRowProps) {
   const [value, setValue] = useState<DesktopStartupWindowSize>()
-  const [failed, setFailed] = useState(false)
+  const [failure, setFailure] = useState<'read' | 'write'>()
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -55,7 +55,7 @@ export function StartupWindowSizeRow({ window: bridge, t }: StartupWindowSizeRow
     let cancelled = false
     void bridge.startupSize().then(
       (stored) => { if (!cancelled) setValue(stored) },
-      () => { if (!cancelled) setFailed(true) },
+      () => { if (!cancelled) setFailure('read') },
     )
     return () => { cancelled = true }
   }, [bridge])
@@ -73,10 +73,10 @@ export function StartupWindowSizeRow({ window: bridge, t }: StartupWindowSizeRow
   const choose = (preset: StartupSizePreset): void => {
     setOpen(false)
     setBusy(true)
-    setFailed(false)
+    setFailure(undefined)
     void bridge.setStartupSize(preset.size).then(
       (accepted) => { setValue(accepted); setBusy(false) },
-      () => { setFailed(true); setBusy(false) },
+      () => { setFailure('write'); setBusy(false) },
     )
   }
 
@@ -84,9 +84,13 @@ export function StartupWindowSizeRow({ window: bridge, t }: StartupWindowSizeRow
     <div className={css.row}>
       <div className={css.rowText}>
         <div className={css.title}>{t('title')}</div>
-        {failed
-          ? <div className={`${css.desc} ${css.failure}`} role="status">{t('writeFailed')}</div>
-          : <div className={css.desc}>{t('description')}</div>}
+        {failure === undefined
+          ? <div className={css.desc}>{t('description')}</div>
+          : (
+            <div className={`${css.desc} ${css.failure}`} role="status">
+              {t(failure === 'read' ? 'readFailed' : 'writeFailed')}
+            </div>
+          )}
         {scale !== undefined && <div className={css.desc}>{t('displayScale', { scale })}</div>}
       </div>
       <Menu

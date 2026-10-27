@@ -60,6 +60,21 @@ it('keeps the accepted value and reports a rejected write', async () => {
   expect(setStartupSize).toHaveBeenCalledTimes(1)
 })
 
+it('reports a failed read as a read failure, not a failed save', async () => {
+  vi.stubGlobal('devicePixelRatio', 1)
+  const props = {
+    window: {
+      startupSize: vi.fn(async (): Promise<DesktopStartupWindowSize> => { throw new Error('denied') }),
+      setStartupSize: vi.fn(async (size: DesktopStartupWindowSize) => size),
+    },
+    t: translate as ComponentProps<typeof StartupWindowSizeRow>['t'],
+  } as ComponentProps<typeof StartupWindowSizeRow>
+  render(<StartupWindowSizeRow {...props} />)
+  expect(await screen.findByText(en.readFailed)).toBeTruthy()
+  expect(screen.queryByText(en.writeFailed)).toBeNull()
+  expect(screen.getByRole('button', { name: en.title }).hasAttribute('disabled')).toBe(true)
+})
+
 it('names a size a user edited into the settings file', async () => {
   mount({ width: 1000, height: 700 }, async size => size)
   const trigger = await screen.findByRole('button', { name: en.title })

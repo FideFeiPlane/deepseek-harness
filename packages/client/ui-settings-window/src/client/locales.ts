@@ -13,6 +13,7 @@ export const zh = {
   sizeMaximize: '最大化',
   sizeCustom: '自定义大小',
   displayScale: '本机显示缩放 {scale}%，窗口尺寸按逻辑像素计算。',
+  readFailed: '没能读取当前设置。',
   writeFailed: '没能保存这次改动，请重试。',
   loading: '正在读取…',
 } satisfies Record<string, string>
@@ -33,6 +34,7 @@ export const en = {
   sizeMaximize: 'Maximized',
   sizeCustom: 'Custom size',
   displayScale: 'This display is scaled to {scale}%; sizes are logical pixels.',
+  readFailed: 'The current setting could not be read.',
   writeFailed: 'The change could not be saved. Try again.',
   loading: 'Reading…',
 } satisfies Record<WindowSizeLocaleKey, string>
@@ -50,6 +52,7 @@ export const ja = {
   sizeMaximize: '最大化',
   sizeCustom: 'カスタムサイズ',
   displayScale: 'このディスプレイは {scale}% に拡大されています。サイズは論理ピクセルです。',
+  readFailed: '現在の設定を読み取れませんでした。',
   writeFailed: '変更を保存できませんでした。もう一度お試しください。',
   loading: '読み込み中…',
 } satisfies Record<WindowSizeLocaleKey, string>
@@ -67,6 +70,7 @@ export const es = {
   sizeMaximize: 'Maximizada',
   sizeCustom: 'Tamaño personalizado',
   displayScale: 'Esta pantalla tiene un escalado del {scale}%; los tamaños son píxeles lógicos.',
+  readFailed: 'No se pudo leer la configuración actual.',
   writeFailed: 'No se pudo guardar el cambio. Inténtalo de nuevo.',
   loading: 'Cargando…',
 } satisfies Record<WindowSizeLocaleKey, string>
@@ -84,6 +88,7 @@ export const fr = {
   sizeMaximize: 'Agrandie',
   sizeCustom: 'Taille personnalisée',
   displayScale: 'Cet écran est à l’échelle {scale} % ; les tailles sont en pixels logiques.',
+  readFailed: 'Le réglage actuel n’a pas pu être lu.',
   writeFailed: 'La modification n’a pas pu être enregistrée. Réessayez.',
   loading: 'Chargement…',
 } satisfies Record<WindowSizeLocaleKey, string>
@@ -101,6 +106,7 @@ export const de = {
   sizeMaximize: 'Maximiert',
   sizeCustom: 'Benutzerdefinierte Größe',
   displayScale: 'Dieser Bildschirm ist auf {scale} % skaliert; Größen sind logische Pixel.',
+  readFailed: 'Die aktuelle Einstellung konnte nicht gelesen werden.',
   writeFailed: 'Die Änderung konnte nicht gespeichert werden. Versuchen Sie es erneut.',
   loading: 'Wird gelesen…',
 } satisfies Record<WindowSizeLocaleKey, string>
@@ -118,6 +124,7 @@ export const ru = {
   sizeMaximize: 'Развёрнуто',
   sizeCustom: 'Свой размер',
   displayScale: 'Масштаб экрана — {scale}%; размеры заданы в логических пикселях.',
+  readFailed: 'Не удалось прочитать текущую настройку.',
   writeFailed: 'Не удалось сохранить изменение. Повторите попытку.',
   loading: 'Чтение…',
 } satisfies Record<WindowSizeLocaleKey, string>
@@ -135,6 +142,7 @@ export const pt = {
   sizeMaximize: 'Maximizada',
   sizeCustom: 'Tamanho personalizado',
   displayScale: 'Esta tela está em escala de {scale}%; os tamanhos são pixels lógicos.',
+  readFailed: 'Não foi possível ler a configuração atual.',
   writeFailed: 'Não foi possível salvar a alteração. Tente novamente.',
   loading: 'Carregando…',
 } satisfies Record<WindowSizeLocaleKey, string>
